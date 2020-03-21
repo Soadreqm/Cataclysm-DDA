@@ -65,6 +65,24 @@
 #include "skill.h"
 #include "cata_string_consts.h"
 
+static const activity_id ACT_AIM( "ACT_AIM" );
+
+static const trap_str_id tr_practice_target( "tr_practice_target" );
+
+static const fault_id fault_gun_blackpowder( "fault_gun_blackpowder" );
+static const fault_id fault_gun_chamber_spent( "fault_gun_chamber_spent" );
+static const fault_id fault_gun_dirt( "fault_gun_dirt" );
+static const fault_id fault_gun_unlubricated( "fault_gun_unlubricated" );
+
+static const skill_id skill_dodge( "dodge" );
+static const skill_id skill_driving( "driving" );
+static const skill_id skill_gun( "gun" );
+static const skill_id skill_launcher( "launcher" );
+static const skill_id skill_throw( "throw" );
+
+static const bionic_id bio_railgun( "bio_railgun" );
+static const bionic_id bio_targeting( "bio_targeting" );
+
 static projectile make_gun_projectile( const item &gun );
 int time_to_attack( const Character &p, const itype &firing );
 static void cycle_action( item &weap, const tripoint &pos );
@@ -1144,22 +1162,20 @@ static int print_aim( const player &p, const catacurses::window &w, int line_num
                                 range, target_size, predicted_recoil );
 }
 
-static int draw_turret_aim( const player &p, const catacurses::window &w, int line_number,
-                            const tripoint &targ )
+static int list_turrets_in_range( vehicle *veh, const std::vector<vehicle_part *> &turrets,
+                                  const catacurses::window &w, int line_number, const tripoint &target )
 {
-    const optional_vpart_position vp = g->m.veh_at( p.pos() );
-    if( !vp ) {
-        debugmsg( "Tried to aim turret while outside vehicle" );
-        return line_number;
+    std::vector<std::string> in_range;
+    for( vehicle_part *t : turrets ) {
+        if( veh->turret_query( *t ).in_range( target ) ) {
+            in_range.push_back( string_format( "*  %s", t->name() ) );
+        }
     }
 
-    // fetch and display list of turrets that are ready to fire at the target
-    auto turrets = vp->vehicle().turrets( targ );
-
-    mvwprintw( w, point( 1, line_number++ ), _( "Turrets in range: %d" ), turrets.size() );
-    for( const auto e : turrets ) {
-        nc_color o = c_white;
-        print_colored_text( w, point( 1, line_number++ ), o, o, string_format( "*  %s", e->name() ) );
+    mvwprintw( w, point( 1, line_number++ ), _( "Turrets in range: %d" ), in_range.size() );
+    for( const std::string &text : in_range ) {
+        nc_color col = c_white;
+        print_colored_text( w, point( 1, line_number++ ), col, c_white, text );
     }
 
     return line_number;
@@ -1293,14 +1309,22 @@ static void update_targets( player &pc, int range, std::vector<Creature *> &targ
         pc.last_target_pos = cata::nullopt;
     } else {
         idx = 0;
-        dst = local_last_tgt_pos ? *local_last_tgt_pos : targets[0]->pos();
+        // No remembered target creature, if we have a remembered aim point, use that.
+        if( local_last_tgt_pos ) {
+            dst = *local_last_tgt_pos;
+        } else {
+            // If we don't have an aim point either, pick the nearest target.
+            dst = targets[0]->pos();
+            pc.recoil = MAX_RECOIL;
+        }
         pc.last_target.reset();
     }
 }
 
 // TODO: Shunt redundant drawing code elsewhere
 std::vector<tripoint> target_handler::target_ui( player &pc, target_mode mode,
-        item *relevant, int range, const itype *ammo, turret_data *turret )
+        item *relevant, int range, const itype *ammo, turret_data *turret, vehicle *veh,
+        const std::vector<vehicle_part *> &vturrets )
 {
     // TODO: this should return a reference to a static vector which is cleared on each call.
     static const std::vector<tripoint> empty_result{};
@@ -1568,7 +1592,7 @@ std::vector<tripoint> target_handler::target_ui( player &pc, target_mode mode,
                                predicted_delay );
                 }
             } else if( mode == TARGET_MODE_TURRET ) {
-                draw_turret_aim( pc, w_target, line_number, dst );
+                list_turrets_in_range( veh, vturrets, w_target, line_number, dst );
             } else if( mode == TARGET_MODE_THROW && relevant ) {
                 draw_throw_aim( pc, w_target, line_number, ctxt, *relevant, dst, false );
             } else if( mode == TARGET_MODE_THROW_BLIND && relevant ) {

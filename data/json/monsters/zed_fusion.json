@@ -79,7 +79,7 @@
   {
     "id": "mon_zombie_crushed_giant",
     "type": "MONSTER",
-    "name": "trapped tendril",
+    "name": { "str": "trapped tendril" },
     "description": "A great tendril of mutated flesh and sharpened bone.  Emergent from a crevice in the ruined floor, hundreds of human limbs seek freedom and writhe incessantly from underneath its grotesque carapace.  As enormous as it may already be, you feel certain that this is just part of a creature much bigger, for when it moves, you can feel this whole ruin tremble, as if an unseen giant struggled against the weight of its concrete tomb.",
     "default_faction": "zombie",
     "volume": "875000 ml",
@@ -139,7 +139,7 @@
   {
     "id": "mon_zombie_gasbag_crawler",
     "type": "MONSTER",
-    "name": "gangrenous crawler",
+    "name": { "str": "gangrenous crawler" },
     "description": "A nightmarish spidery abomination, born from human gore.  It deftly crawls between walls and ceiling with limbs grown from its own disjointed ribs.",
     "default_faction": "zombie",
     "bodytype": "spider",
@@ -169,7 +169,7 @@
   {
     "id": "mon_zombie_gasbag_impaler",
     "type": "MONSTER",
-    "name": "gangrenous impaler",
+    "name": { "str": "gangrenous impaler" },
     "description": "A corpse hideously twisted into an insect-like form.  A hollow tendril reaches out from its open thorax.",
     "default_faction": "zombie",
     "bodytype": "spider",
